@@ -4,7 +4,8 @@
   "description": "Twitter Bot to leveragethe Stocker API",
   "main": "index.js",
   "scripts": {
-    "start": "node main.js"
+    "start": "node main.js",
+    "clean": "cd data && rm tweets.csv && cd .."
   },
   "repository": {
     "type": "git",
@@ -17,6 +18,9 @@
   },
   "homepage": "https://github.com/dwallach1/Stocker#readme",
   "dependencies": {
+    "async": "^2.6.1",
+    "csv": "^3.1.0",
+    "csv-parse": "^2.5.0",
     "events": "^3.0.0",
     "papaparse": "^4.5.0",
     "twit": "^2.2.11",

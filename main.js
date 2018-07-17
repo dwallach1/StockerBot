@@ -2,16 +2,23 @@
 var fs = require('fs');
 var StockerBot = require('./index.js');
 var config = require('./config');
-var Papa = require('papaparse')
+var parse = require('csv-parse');
+var async = require('async');
+
+var csv = require('csv');
 
 
 const WAIT_PERIOD = 30*1000;	// 30 seconds
-const BATCH_SIZE = 10
+const BATCH_SIZE = 3;
+const DATA_READ_PATH = 'data/stocks_cleaned.csv';
+const DATA_WRITE_PATH = 'data/tweets.csv';
 
 var stockerBot = new StockerBot(config);
 
-console.log("StockerBot initalized")
 
+console.log("StockerBot initalized");
+var watchlist = []
+get_user_watchlist()
 /*
  *  Load stock data to identify if a tweet is pertaning to a user's stock
  *	list
@@ -25,33 +32,55 @@ console.log("StockerBot initalized")
  	 * 	curious about
  	 *
  	 */
-
- 	 // var csv_data = readFileSync('../data/stocks.csv')
- 	 
- 	 // Papa.parse(csv_data, {
- 	 // 	complete: function(results) {
- 	 // 		console.log("Finished:", results.data)
- 	 // 	}
- 	 // });
-
- 	 
+ 	 // var watchlist = []
+ 	 var unpacked_row;
+ 	 fs.createReadStream(DATA_READ_PATH)
+   	   .pipe(parse({delimiter: ':'}))
+       .on('data', function(csvrow) {
+	        // console.log(csvrow);
+	        unpacked_row = csvrow[0].split(',');
+	        watchlist.push(unpacked_row);
+	    })
+       .on('end',function() {
+	    	console.log('finished parsing stock list.');
+	    	var bitcoin = ['BTC', 'Bitcoin'];
+	    	watchlist.push(bitcoin);
+	    	console.log("Number of Companies on watchlist: ", watchlist.length);	    	
+	    	return watchlist
+    	});
+ //   	var obj = csv();
+	// obj.from.path(DATA_READ_PATH).to.array(function (data) {
+	//     for (var index = 1; index < data.length; index++) {
+	//         watchlist.push([data[index][0], data[index][1]]);
+	//     }
+	// });
+	// return watchlist; 
  }
 
-var watchlist = get_user_watchlist()
-var tweets_to_write = []
+// var watchlist = get_user_watchlist();
+var tweets_to_write = [];
 
-function batch_save() {
-	if (tweets_to_write.length > BATCH_SIZE) {
-		// write all tweets to disk and clear
-
-		tweets_to_write = []
+function save(tweet) {
+	if (!fs.existsSync(DATA_WRITE_PATH)) {
+		var header = 'id,text,timestamp,source,companies,url\n'
+		fs.writeFile(DATA_WRITE_PATH, header, function(err) {
+		    if(err) {
+		        return console.log(err);
+		    }
+		    console.log("data/tweets.csv file was created!");
+		}); 
 	}
-	// otherwise do nothing
-	return
+	var line = tweet.id + ',' + tweet.text.replace(/,/g , '') + ',' + tweet.created_at + ',' + tweet.source + ',' + tweet.companies + ',' + tweet.url + '\n';
+	fs.appendFile(DATA_WRITE_PATH, line, function (err) {
+	  if (err) 
+	  	return console.log('error saving data (append)', err);
+
+	  console.log('Tweet ', tweet.id, ' was saved successfully!');
+	});
 }
 
 
-function is_relevant(screen_name, text) {
+function find_companies(screen_name, text) {
 	/*
 	 *
 	 *	Aims to see if the tweet is pertaining to any one of the
@@ -59,18 +88,25 @@ function is_relevant(screen_name, text) {
 	 *	with associated symbols
 	 *
 	 */
-	var companies = []
-	// var symbol, name 
-	// for (var i=0; i < watchlist.length; i++) {
-	// 	symbol = watchlist[i][0]
-	// 	name = watchlist[i][1]
+	var companies = [];
+	var symbol, name, S, N, words
+	if (watchlist) {
+		for (var i=0; i < watchlist.length; i++) {
+			symbol = watchlist[i][0]
+			$symbol = '$' + symbol
+			name = watchlist[i][1]
 
-	// 	S = regex.search(text, symbol)
-	// 	N = regex.search(text, name)
 
-	// 	if (S || N) { companies.push(symbol) }
-	// }
-	return companies
+			$S = text.toLowerCase().includes($symbol.toLowerCase());
+			N = text.toLowerCase().includes(name.toLowerCase());
+
+			S = text.toLowerCase().split(' ').indexOf(symbol) > -1;
+
+			if ($S || S || N) { companies.push(symbol); }
+		}
+	}
+	console.log('watchlist is: ', watchlist);
+	return companies;
 }
 
 function classify(screen_name, text) {
@@ -82,7 +118,14 @@ function classify(screen_name, text) {
 	 *		1 - the company itself
 	 *		2 - general industry of the company
 	 */
-	 return 1
+	 return 1;
+}
+
+function uniqueify(tweets) {
+    var seen = {};
+    return tweets.filter(function(tweet) {
+        return seen.hasOwnProperty(tweet.id) ? false : (seen[tweet.id] = true);
+    });
 }
 
 
@@ -97,23 +140,26 @@ stockerBot.on('newTweet', function(screen_name, tweet) {
 	 * 
 	 */
 
-	console.log('tweet from: ', screen_name, '(', tweet.created_at, ')', ' ---> ', tweet.text)
+	console.log('tweet from: ', screen_name, '(', tweet.created_at, ')', ' ---> ', tweet.text);
 
 	var urls
 	if (tweet.entities.urls) {
-		urls = tweet.entities.urls.map(url => url.expanded_url)
+		urls = tweet.entities.urls.map(url => url.expanded_url);
+		tweet.url = urls[0];
 	} else {
-		urls = []
+		tweet.url = '';
 	}
-	console.log(urls)
+	
+	var companies = find_companies(screen_name, tweet.text);
+	var classification = classify(screen_name, tweet.text);
+	tweet.source = screen_name;
 
-	var is_relevant = is_relevant(screen_name, tweet.text)
-	var classification = classify(screen_name, tweet.text)
-	tweet.source = screen_name
+	tweet['status'] = 0
 
-	tweets_to_write.push(tweet)
-
-	batch_save()
+	if (companies.length > 0) {
+		tweet.companies = companies.join('-');
+		save(tweet);
+	}
 });
 
 
@@ -126,14 +172,13 @@ stockerBot.on('symbolTweet', function(symbol, tweet) {
 	tweets_to_write.push(tweet)
 
 	batch_save()
-
+	tweets_to_write = tweets_to_write.filter(t => t.status == 0)
 }); 
 
 
 
 // start the loop
-var screen_names = ['MarketWatch', 'business', 'YahooFinance', 'TechCrunch', 'WSJ', 'Forbes', 'FT', 'TheEconomist', 'nytimes', 'Reuters', 'GerberKawasaki']
-stockerBot.pollAccounts(screen_names, WAIT_PERIOD)
+var screen_names = ['MarketWatch', 'business', 'YahooFinance', 'TechCrunch', 
+					'WSJ', 'Forbes', 'FT', 'TheEconomist', 'nytimes', 'Reuters', 'GerberKawasaki', 'derv_wallach'];
 
-console.log("StockerBot started ...")
-
+stockerBot.pollAccounts(screen_names, WAIT_PERIOD);

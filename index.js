@@ -1,6 +1,5 @@
 'use strict';
 const unirest = require('unirest');
-// const bluebird = require('bluebird');
 const Twit = require('twit');
 const events = require('events');
 
@@ -36,8 +35,7 @@ const StockerBot = function(config) {
 		if (logger) {
 			if (logger_path) {
 				fs.writefile(logger_path, msg, function(err) {
-					if (err) console.log(err);
-
+					if (err) console.log(err)
 					// otherwise do nothing
 					});
 			} else{
@@ -67,7 +65,6 @@ const StockerBot = function(config) {
 				process.stdout.write('polling worker for ')
 				process.stdout.write(screen_name)
 				process.stdout.write(' ......')
-				//console.log('polling worker for ', screen_name)
 				self.pollWorker(screen_name)
 				process.stdout.write('done!\n')
 			}
@@ -136,7 +133,7 @@ StockerBot.prototype = new events.EventEmitter;
 StockerBot.prototype.pollAccounts = function(screen_names, interval) {
 	console.log('Polling accounts ...')
 	this.pollSpawner(screen_names, interval)
-	console.log('Finished polling accounts!')
+	// console.log('Finished polling accounts!')
 };
 
 StockerBot.prototype.pollSymbol = function(symbol, interval) {
