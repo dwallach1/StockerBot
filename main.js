@@ -8,7 +8,7 @@ var async = require('async');
 var csv = require('csv');
 
 
-const WAIT_PERIOD = 30*1000;	// 30 seconds
+const WAIT_PERIOD = 60*1000 * 2;	// 60 seconds * 2
 const BATCH_SIZE = 3;
 const DATA_READ_PATH = 'data/stocks_cleaned.csv';
 const DATA_WRITE_PATH = 'data/tweets.csv';
@@ -44,7 +44,9 @@ get_user_watchlist()
        .on('end',function() {
 	    	console.log('finished parsing stock list.');
 	    	var bitcoin = ['BTC', 'Bitcoin'];
+	    	var omisego = ['OMG', 'Omisego'];
 	    	watchlist.push(bitcoin);
+	    	watchlist.push(omisego);
 	    	console.log("Number of Companies on watchlist: ", watchlist.length);	    	
 	    	return watchlist
     	});
@@ -71,7 +73,7 @@ function save(tweet) {
 	  if (err) 
 	  	return console.log('error saving data (append)', err);
 
-	  console.log('Tweet ', tweet.id, ' was saved successfully!');
+	  console.log('Tweet ', tweet.id, '\x1b[42m was saved successfully!\x1b[0m');
 	});
 }
 
@@ -168,6 +170,10 @@ stockerBot.on('symbolTweet', function(symbol, tweet) {
 
 // start the loop
 var screen_names = ['MarketWatch', 'business', 'YahooFinance', 'TechCrunch', 
-					'WSJ', 'Forbes', 'FT', 'TheEconomist', 'nytimes', 'Reuters', 'GerberKawasaki', 'derv_wallach'];
+					'WSJ', 'Forbes', 'FT', 'TheEconomist', 'nytimes', 'Reuters', 'GerberKawasaki', 
+					 'jimcramer', 'TheStreet', 'TheStalwart', 'TruthGundlach',
+					'Carl_C_Icahn', 'ReformedBroker', 'benbernanke', 'bespokeinvest', 'BespokeCrypto',
+					'stlouisfed', 'federalreserve', 'GoldmanSachs', 'ianbremmer', 'MorganStanley', 'AswathDamodaran',
+					'mcuban', 'muddywatersre'];
 
 stockerBot.pollAccounts(screen_names, WAIT_PERIOD);
