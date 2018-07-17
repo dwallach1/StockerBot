@@ -89,17 +89,15 @@ function find_companies(screen_name, text) {
 	 *
 	 */
 	var companies = [];
-	var symbol, name, S, N, words
+	var symbol, name, $symbol, $S, S, N, words
 	if (watchlist) {
 		for (var i=0; i < watchlist.length; i++) {
 			symbol = watchlist[i][0]
 			$symbol = '$' + symbol
 			name = watchlist[i][1]
 
-
 			$S = text.toLowerCase().includes($symbol.toLowerCase());
 			N = text.toLowerCase().includes(name.toLowerCase());
-
 			S = text.toLowerCase().split(' ').indexOf(symbol) > -1;
 
 			if ($S || S || N) { companies.push(symbol); }
