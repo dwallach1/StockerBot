@@ -3,6 +3,8 @@ import csv
 stopwords = ['companies', 'inc.', 'holdings', 'trust', 'corporation', 'incorporated', 'sciences', 
 			'biosciences', 'international', 'plc', 'llc', '(publ)', 'bancorp', 'corp.', 'group', 'airways', 'technology']
 
+skippers = ['CA', 'NWSA', 'NWS']
+
 tuples = []
 with open('../data/stocks.csv') as csv_file:
 	csv_reader = csv.reader(csv_file, delimiter=',')
@@ -33,5 +35,6 @@ for t in tuples:
 	cleaned_name = ' '.join(name)
 
 	if cleaned_name[-4:] == '.com': cleaned_name = cleaned_name[:-4]
+	if t[0] in skippers: continue
 	line = t[0] + ',' + cleaned_name + '\n'
 	csv_file.write(line)

@@ -62,14 +62,14 @@ const StockerBot = function(config) {
 			var screen_name
 			for (var i=0; i <screen_names.length; i++) {
 				screen_name = screen_names[i]
-				process.stdout.write('polling worker for ')
-				process.stdout.write(screen_name)
-				process.stdout.write(' ......')
+				// process.stdout.write('polling worker for ')
+				// process.stdout.write(screen_name)
+				// process.stdout.write(' ......')
 				self.pollWorker(screen_name)
-				process.stdout.write('done!\n')
+				// process.stdout.write('done!\n')
 			}
 			// new line
-			console.log()
+			// console.log()
 		}, interval);
 	};
 

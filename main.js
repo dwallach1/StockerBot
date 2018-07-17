@@ -48,17 +48,7 @@ get_user_watchlist()
 	    	console.log("Number of Companies on watchlist: ", watchlist.length);	    	
 	    	return watchlist
     	});
- //   	var obj = csv();
-	// obj.from.path(DATA_READ_PATH).to.array(function (data) {
-	//     for (var index = 1; index < data.length; index++) {
-	//         watchlist.push([data[index][0], data[index][1]]);
-	//     }
-	// });
-	// return watchlist; 
  }
-
-// var watchlist = get_user_watchlist();
-var tweets_to_write = [];
 
 function save(tweet) {
 	if (!fs.existsSync(DATA_WRITE_PATH)) {
@@ -70,13 +60,26 @@ function save(tweet) {
 		    console.log("data/tweets.csv file was created!");
 		}); 
 	}
-	var line = tweet.id + ',' + tweet.text.replace(/,/g , '') + ',' + tweet.created_at + ',' + tweet.source + ',' + tweet.companies + ',' + tweet.url + '\n';
+
+	var words = tweet.text.replace(/,/g , '').split(' ');
+	for (var i = 0; i < words.length; i++) {
+		words[i] = words[i].replace(/^\s+|\s+$/g, '');
+	}
+	var text = words.join(' ');
+	var line = tweet.id + ',' + text + ',' + tweet.created_at + ',' + tweet.source + ',' + tweet.companies + ',' + tweet.url + '\n';
 	fs.appendFile(DATA_WRITE_PATH, line, function (err) {
 	  if (err) 
 	  	return console.log('error saving data (append)', err);
 
 	  console.log('Tweet ', tweet.id, ' was saved successfully!');
 	});
+}
+
+function uniqueify(a) {
+    var seen = {};
+    return a.filter(function(item) {
+        return seen.hasOwnProperty(item) ? false : (seen[item] = true);
+    });
 }
 
 
@@ -92,19 +95,19 @@ function find_companies(screen_name, text) {
 	var symbol, name, $symbol, $S, S, N, words
 	if (watchlist) {
 		for (var i=0; i < watchlist.length; i++) {
-			symbol = watchlist[i][0]
-			$symbol = '$' + symbol
+			symbol = ' ' + watchlist[i][0] + ' '
+			$symbol = '$' + watchlist[i][0]
 			name = watchlist[i][1]
 
 			$S = text.toLowerCase().includes($symbol.toLowerCase());
 			N = text.toLowerCase().includes(name.toLowerCase());
 			S = text.toLowerCase().split(' ').indexOf(symbol) > -1;
 
-			if ($S || S || N) { companies.push(symbol); }
+			if ($S || S || N) { companies.push(watchlist[i][0]); }
 		}
 	}
-	console.log('watchlist is: ', watchlist);
-	return companies;
+	// console.log('watchlist is: ', watchlist);
+	return uniqueify(companies);
 }
 
 function classify(screen_name, text) {
@@ -119,13 +122,6 @@ function classify(screen_name, text) {
 	 return 1;
 }
 
-function uniqueify(tweets) {
-    var seen = {};
-    return tweets.filter(function(tweet) {
-        return seen.hasOwnProperty(tweet.id) ? false : (seen[tweet.id] = true);
-    });
-}
-
 
 /*
  *	Attach event emitters
@@ -138,7 +134,7 @@ stockerBot.on('newTweet', function(screen_name, tweet) {
 	 * 
 	 */
 
-	console.log('tweet from: ', screen_name, '(', tweet.created_at, ')', ' ---> ', tweet.text);
+	console.log('tweet from: ', screen_name, '|', tweet.id, '|', '(', tweet.created_at, ')', ' ---> ', tweet.text);
 
 	var urls
 	if (tweet.entities.urls) {
@@ -151,8 +147,6 @@ stockerBot.on('newTweet', function(screen_name, tweet) {
 	var companies = find_companies(screen_name, tweet.text);
 	var classification = classify(screen_name, tweet.text);
 	tweet.source = screen_name;
-
-	tweet['status'] = 0
 
 	if (companies.length > 0) {
 		tweet.companies = companies.join('-');
@@ -167,10 +161,7 @@ stockerBot.on('symbolTweet', function(symbol, tweet) {
 	console.log('tweet about: ', symbol, '(', tweet.created_at, ')', ' ---> ', tweet.text)
 	tweet.source = symbol
 
-	tweets_to_write.push(tweet)
-
-	batch_save()
-	tweets_to_write = tweets_to_write.filter(t => t.status == 0)
+	save(tweet)
 }); 
 
 
