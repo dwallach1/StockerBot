@@ -36,6 +36,7 @@ process.argv.forEach(function (val, index, array) {
  */
  var serviceAccount, db, ref;
  if (firebase) {
+
  	console.log('Firebase enabled...Attempting to verify credentials.')
  	serviceAccount = require("./stockerbot-firebase-adminsdk-1yhwz-6e9672bd0a.json");
  	admin.initializeApp({
@@ -114,7 +115,7 @@ function write_to_firebase(tweet) {
 	ref.child(id).set({ 
 		text: tweet.text,
 		timestamp: tweet.created_at,
-		soure: tweet.source,
+		source: tweet.source,
 		symbols: tweet.symbols,
 		company_names: tweet.company_names,
 		url: tweet.url
