@@ -129,12 +129,8 @@ const StockerBot = function(config) {
 				log('\x1b[31m', symbol, '\x1b[0m', err);
 			}
 			else {
-				// console.log('data is ', data);
-				
 				tweets = data.statuses;
-				console.log('got tweets!');
 				self.emit('symbolTweets', symbol, tweets);
-
 			}
 		});
 	}

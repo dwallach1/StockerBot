@@ -1,11 +1,12 @@
 {
   "name": "StockerBot",
   "version": "1.0.0",
-  "description": "Twitter Bot to leveragethe Stocker API",
+  "description": "Twitter Bot to monitor and query financial news sources about publicy traded companies you are interested in",
   "main": "index.js",
   "scripts": {
-    "start": "node main.js",
-    "clean": "cd data && rm tweets.csv && cd .."
+    "start": "npm run poll",
+    "poll": "node main.js --poll --firebase",
+    "search": "node main.js --search"
   },
   "repository": {
     "type": "git",
@@ -23,8 +24,6 @@
     "csv-parse": "^2.5.0",
     "events": "^3.0.0",
     "firebase-admin": "^5.13.0",
-    "minimist": "^1.2.0",
-    "papaparse": "^4.5.0",
     "twit": "^2.2.11",
     "unirest": "^0.5.1"
   }

@@ -1,7 +1,7 @@
 'use strict';
 var fs = require('fs');
 var StockerBot = require('./index.js');
-var config = require('./config');
+var config = require('./config');	// update to point to your Twit credentials 
 var parse = require('csv-parse');
 var async = require('async');
 var csv = require('csv');
@@ -15,71 +15,65 @@ var admin = require("firebase-admin");
  *
  */
 
-var argv = require('minimist')(process.argv);
-console.dir(argv);
-
-var symbol, count;
-
-
+var symbol, count, search, poll;
+var firebase = false;
+var verified = false;
 process.argv.forEach(function (val, index, array) {
-  console.log(index + ': ' + val);
+  // console.log(index + ': ' + val);
   if (val == '--symbol' || val == '-s') { symbol = process.argv[index+1]; }
   if (val == '--count' || val == '-c') { count = parseInt(process.argv[index+1]); }
+  if (val == '--firebase') { firebase = true; }
+  if (val == '--verified') { verified = true; }
+  if (val == '--search') { search = true; }
+  if (val == '--poll') { poll = true; }
 });
-
-
 
 
 /*
  *
- *	Initalize Firebase account 
+ *	Initalize Firebase account (update to point to your paths & credentials -- different for each user)
  *
  */
-var serviceAccount = require("./stockerbot-firebase-adminsdk-1yhwz-6e9672bd0a.json");
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://stockerbot.firebaseio.com"
-});
-
-var db = admin.database();
-var ref = db.ref("/");
-
-function write_to_firebase(tweet) {
-	var id = tweet.id;
-	delete tweet.id;
-
-	if (typeof(tweet.url) == 'undefined') {tweet.url = ''}
-	ref.child(id).set({ 
-		text: tweet.text,
-		timestamp: tweet.created_at,
-		soure: tweet.source,
-		symbols: tweet.symbols,
-		company_names: tweet.company_names,
-		url: tweet.url
+ var serviceAccount, db, ref;
+ if (firebase) {
+ 	console.log('Firebase enabled...Attempting to verify credentials.')
+ 	serviceAccount = require("./stockerbot-firebase-adminsdk-1yhwz-6e9672bd0a.json");
+ 	admin.initializeApp({
+	  credential: admin.credential.cert(serviceAccount),
+	  databaseURL: "https://stockerbot.firebaseio.com"
 	});
+	db = admin.database();
+	ref = db.ref("/");
 
-	console.log('updated Firebase w new tweet \x1b[42m successfully! \x1b[0m')
-}
+	console.log('Firebase account connected \x1b[42m successfully! \x1b[0m');
+ } else { console.log('Firebase disabled.'); }
 
-const WAIT_PERIOD = 60*1000 ;	// 60 seconds * 2
+
+/*
+ *
+ *	Declare Global vars 
+ *
+ *
+ */
+const WAIT_PERIOD = 60*1000 ;	// 60 seconds 
 const BATCH_SIZE = 3;
 const DATA_READ_PATH = 'data/stocks_cleaned.csv';
 const DATA_WRITE_PATH = 'data/tweets.csv';
 
-
 var stockerBot = new StockerBot(config);
 
-
-console.log("StockerBot initalized");
 var watchlist = []
-get_user_watchlist()
-/*
- *  Load stock data to identify if a tweet is pertaning to a user's stock
- *	list
- */
+if (poll) { get_user_watchlist(); }
 
- function get_user_watchlist() {
+var influencers = ['MarketWatch', 'business', 'YahooFinance', 'TechCrunch', 
+					'WSJ', 'Forbes', 'FT', 'TheEconomist', 'nytimes', 'Reuters', 'GerberKawasaki', 
+					 'jimcramer', 'TheStreet', 'TheStalwart', 'TruthGundlach',
+					'Carl_C_Icahn', 'ReformedBroker', 'benbernanke', 'bespokeinvest', 'BespokeCrypto',
+					'stlouisfed', 'federalreserve', 'GoldmanSachs', 'ianbremmer', 'MorganStanley', 'AswathDamodaran',
+					'mcuban', 'muddywatersre', 'StockTwits', 'SeanaNSmith'];
+
+
+function get_user_watchlist() {
  	/*
  	 *
  	 *	This function would get a user's watch list, but for testing & developing reasons
@@ -104,16 +98,46 @@ get_user_watchlist()
 	    	console.log("Number of Companies on watchlist: ", watchlist.length);	    	
 	    	return watchlist
     	});
- }
+}
 
-function save(tweet) {
-	if (!fs.existsSync(DATA_WRITE_PATH)) {
+function write_to_firebase(tweet) {
+	/*
+	 *
+	 *	Writes the tweet to the user's firebase realtime DB at the root
+	 *	of the DB using the tweet's ID as the key 
+	 *
+	 */
+	var id = tweet.id;
+	delete tweet.id;
+
+	if (typeof(tweet.url) == 'undefined') {tweet.url = ''}
+	ref.child(id).set({ 
+		text: tweet.text,
+		timestamp: tweet.created_at,
+		soure: tweet.source,
+		symbols: tweet.symbols,
+		company_names: tweet.company_names,
+		url: tweet.url
+	});
+
+	console.log('updated Firebase w new tweet \x1b[42m successfully! \x1b[0m')
+}
+
+function save(tweet, csv_path) {
+	/*
+	 *	
+	 *	This function saves the tweet to a file called tweets.csv which is 
+	 *	located at the path stored in the DATA_WRITE_PATH variable. If this file does
+	 *	not exist, then this function will create it at the designated path.
+	 *
+	 */
+	if (!fs.existsSync(csv_path)) {
 		var header = 'id,text,timestamp,source,symbols,company_names,url\n'
-		fs.writeFile(DATA_WRITE_PATH, header, function(err) {
+		fs.writeFile(csv_path, header, function(err) {
 		    if(err) {
 		        return console.log(err);
 		    }
-		    console.log("data/tweets.csv file was created!");
+		    console.log(csv_path, " file was created!");
 		}); 
 	}
 
@@ -123,12 +147,14 @@ function save(tweet) {
 	}
 	var text = words.join(' ');
 	var line = tweet.id + ',' + text + ',' + tweet.created_at + ',' + tweet.source + ',' + tweet.symbols + ',' + tweet.company_names + ','+ tweet.url + '\n';
-	fs.appendFile(DATA_WRITE_PATH, line, function (err) {
-	  if (err) 
-	  	return console.log('error saving data (append)', err);
+	
+	fs.appendFile(csv_path, line, function (err) {
+	  
+	  if (err) { console.log('error saving data (append)', err); }
 
 	  console.log('Tweet ', tweet.id, ' was saved \x1b[42m successfully! \x1b[0m');
-	  write_to_firebase(tweet);
+	  
+	  if (firebase) { write_to_firebase(tweet); }
 	});
 }
 
@@ -138,7 +164,6 @@ function uniqueify(a) {
         return seen.hasOwnProperty(item) ? false : (seen[item] = true);
     });
 }
-
 
 function find_companies(screen_name, text) {
 	/*
@@ -209,16 +234,35 @@ stockerBot.on('newTweet', function(screen_name, tweet) {
 		var symbols = companies.map(c => c[0]);
 		var names = companies.map(c => c[1]);
 		tweet.symbols = symbols.join('-');
-		tweet.company_names = names.join('*')
-		save(tweet);
+		tweet.company_names = names.join('*');
+		save(tweet, DATA_WRITE_PATH);
 	}
 });
 
 stockerBot.on('symbolTweets', function(symbol, tweets) {
-	console.log('Found ', tweets.length, ' tweets for ', symbol);
-	console.log(tweets);
+	console.log('Found ', tweets.length, ' tweets');
 
-	process.exit();
+	if (verified) {
+		tweets = tweets.filter(t => t.user.verified);
+		console.log('Found ', tweets.length, ' verified tweets');
+	}
+	
+	var tweet;
+	for (var i=0; i<tweets.length; i++) {
+		tweet = tweets[i];
+
+		var urls;
+		if (tweet.entities.urls) {
+			urls = tweet.entities.urls.map(url => url.expanded_url);
+			tweet.url = urls[0];
+		} else {
+			tweet.url = '';
+		}
+		tweet.source = tweet.user.screen_name;
+		tweet.symbols = symbol;
+		tweet.company_names = '';
+		save(tweet, 'data/search_tweets.csv');
+	}
 });
 
 
@@ -227,20 +271,15 @@ stockerBot.on('symbolTweets', function(symbol, tweets) {
  *	StockerBot Methods
  *
  */
+if (search) {
+	if (!symbol) { throw new Error('Must provide a publicly traded stock ticker for the search API\n EXAMPLE: > `npm run search -- -s AAPL`'); }
+	count = typeof(count) == "undefined" ? 10 : count;
+	stockerBot.searchSymbol(symbol, count);
+}
 
-// start the loop
-var influencers = ['MarketWatch', 'business', 'YahooFinance', 'TechCrunch', 
-					'WSJ', 'Forbes', 'FT', 'TheEconomist', 'nytimes', 'Reuters', 'GerberKawasaki', 
-					 'jimcramer', 'TheStreet', 'TheStalwart', 'TruthGundlach',
-					'Carl_C_Icahn', 'ReformedBroker', 'benbernanke', 'bespokeinvest', 'BespokeCrypto',
-					'stlouisfed', 'federalreserve', 'GoldmanSachs', 'ianbremmer', 'MorganStanley', 'AswathDamodaran',
-					'mcuban', 'muddywatersre', 'StockTwits', 'SeanaNSmith'];
+if (poll) {
+	stockerBot.pollAccounts(influencers, WAIT_PERIOD);
+}
 
-stockerBot.pollAccounts(influencers, WAIT_PERIOD);
-
-
-// var symbol = '$TSLA';
-// var count = 5;
-stockerBot.searchSymbol(symbol, count);
 
 

@@ -33,6 +33,6 @@ If you would like to gather tweets based on just the companies stock ticker, wit
 > npm run search -- -s AAPL 
 ```
 
-You must provide the symbol flag (`-s` or `--symbol`). You can also pass a count flag (`-c` or `--count`) to get `x` amount of tweets, this value defaults to 10 if no value is provided. Passing a value of -1 for the count will get as many as possible. You can also provide a verified flag (`-v` or `--verified`) to ensure that each tweet is from a verified account, this flag defaults to 1 (true). 
+You must provide the symbol flag (`-s` or `--symbol`). You can also pass an optional count flag (`-c` or `--count`) to get `x` amount of tweets, this value defaults to 10 if no value is provided. Passing a value of -1 for the count will get as many as possible. You can also provide a verified flag (`--verified`) to ensure that each tweet is from a verified account, this flag defaults to `false`. 
 
 
