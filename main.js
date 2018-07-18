@@ -4,11 +4,43 @@ var StockerBot = require('./index.js');
 var config = require('./config');
 var parse = require('csv-parse');
 var async = require('async');
-
 var csv = require('csv');
+var admin = require("firebase-admin");
 
 
-const WAIT_PERIOD = 60*1000 * 2;	// 60 seconds * 2
+/*
+ *
+ *	Initalize Firebase account 
+ *
+ */
+var serviceAccount = require("./stockerbot-firebase-adminsdk-1yhwz-6e9672bd0a.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "https://stockerbot.firebaseio.com"
+});
+
+var db = admin.database();
+var ref = db.ref("/");
+
+function write_to_firebase(tweet) {
+	var id = tweet.id;
+	delete tweet.id;
+
+	if (typeof(tweet.url) == 'undefined') {tweet.url = ''}
+	ref.child(id).set({ 
+		text: tweet.text,
+		timestamp: tweet.created_at,
+		soure: tweet.source,
+		symbols: tweet.symbols,
+		company_names: tweet.company_names,
+		url: tweet.url
+	});
+
+	console.log('updated Firebase w new tweet \x1b[42m successfully! \x1b[0m')
+}
+
+const WAIT_PERIOD = 60*1000 ;	// 60 seconds * 2
 const BATCH_SIZE = 3;
 const DATA_READ_PATH = 'data/stocks_cleaned.csv';
 const DATA_WRITE_PATH = 'data/tweets.csv';
@@ -54,7 +86,7 @@ get_user_watchlist()
 
 function save(tweet) {
 	if (!fs.existsSync(DATA_WRITE_PATH)) {
-		var header = 'id,text,timestamp,source,companies,url\n'
+		var header = 'id,text,timestamp,source,symbols,company_names,url\n'
 		fs.writeFile(DATA_WRITE_PATH, header, function(err) {
 		    if(err) {
 		        return console.log(err);
@@ -68,12 +100,13 @@ function save(tweet) {
 		words[i] = words[i].replace(/^\s+|\s+$/g, '');
 	}
 	var text = words.join(' ');
-	var line = tweet.id + ',' + text + ',' + tweet.created_at + ',' + tweet.source + ',' + tweet.companies + ',' + tweet.url + '\n';
+	var line = tweet.id + ',' + text + ',' + tweet.created_at + ',' + tweet.source + ',' + tweet.symbols + ',' + tweet.company_names + ','+ tweet.url + '\n';
 	fs.appendFile(DATA_WRITE_PATH, line, function (err) {
 	  if (err) 
 	  	return console.log('error saving data (append)', err);
 
-	  console.log('Tweet ', tweet.id, '\x1b[42m was saved successfully!\x1b[0m');
+	  console.log('Tweet ', tweet.id, ' was saved \x1b[42m successfully! \x1b[0m');
+	  write_to_firebase(tweet);
 	});
 }
 
@@ -105,7 +138,7 @@ function find_companies(screen_name, text) {
 			N = text.toLowerCase().includes(name.toLowerCase());
 			S = text.toLowerCase().split(' ').indexOf(symbol) > -1;
 
-			if ($S || S || N) { companies.push(watchlist[i][0]); }
+			if ($S || S || N) { companies.push(watchlist[i]); }
 		}
 	}
 	// console.log('watchlist is: ', watchlist);
@@ -151,7 +184,10 @@ stockerBot.on('newTweet', function(screen_name, tweet) {
 	tweet.source = screen_name;
 
 	if (companies.length > 0) {
-		tweet.companies = companies.join('-');
+		var symbols = companies.map(c => c[0]);
+		var names = companies.map(c => c[1]);
+		tweet.symbols = symbols.join('-');
+		tweet.company_names = names.join('*')
 		save(tweet);
 	}
 });
@@ -169,11 +205,11 @@ stockerBot.on('symbolTweet', function(symbol, tweet) {
 
 
 // start the loop
-var screen_names = ['MarketWatch', 'business', 'YahooFinance', 'TechCrunch', 
+var influencers = ['MarketWatch', 'business', 'YahooFinance', 'TechCrunch', 
 					'WSJ', 'Forbes', 'FT', 'TheEconomist', 'nytimes', 'Reuters', 'GerberKawasaki', 
 					 'jimcramer', 'TheStreet', 'TheStalwart', 'TruthGundlach',
 					'Carl_C_Icahn', 'ReformedBroker', 'benbernanke', 'bespokeinvest', 'BespokeCrypto',
 					'stlouisfed', 'federalreserve', 'GoldmanSachs', 'ianbremmer', 'MorganStanley', 'AswathDamodaran',
 					'mcuban', 'muddywatersre'];
 
-stockerBot.pollAccounts(screen_names, WAIT_PERIOD);
+stockerBot.pollAccounts(influencers, WAIT_PERIOD);
