@@ -1,7 +1,8 @@
 import csv
+from collections import defaultdict
 
 stopwords = ['companies', 'inc.', 'holdings', 'trust', 'corporation', 'incorporated', 'sciences', 
-			'biosciences', 'international', 'plc', 'llc', '(publ)', 'bancorp', 'corp.', 'group', 'airways', 'technology']
+			'biosciences', 'plc', 'llc', '(publ)', 'bancorp', 'corp.', 'group', 'technology']
 
 skippers = ['CA', 'NWSA', 'NWS']
 
@@ -22,10 +23,13 @@ headers = 'ticker, name\n'
 csv_file.write(headers)
 
 
+written = defaultdict(lambda: False)
+
 for t in tuples:
 
-	name = []
+	if written[t[0]]: continue
 
+	name = []
 	words = t[1].split(' ')
 	for w in words:
 		if w.lower() in stopwords:
@@ -38,3 +42,4 @@ for t in tuples:
 	if t[0] in skippers: continue
 	line = t[0] + ',' + cleaned_name + '\n'
 	csv_file.write(line)
+	written[t[0]] = True

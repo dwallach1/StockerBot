@@ -44,7 +44,7 @@ process.argv.forEach(function (val, index, array) {
 	  databaseURL: "https://stockerbot.firebaseio.com"
 	});
 	db = admin.database();
-	ref = db.ref("/");
+	ref = db.ref('/');
 
 	console.log('Firebase account connected \x1b[42m successfully! \x1b[0m');
  } else { console.log('Firebase disabled.'); }
@@ -86,12 +86,10 @@ function get_user_watchlist() {
  	 fs.createReadStream(DATA_READ_PATH)
    	   .pipe(parse({delimiter: ':'}))
        .on('data', function(csvrow) {
-	        // console.log(csvrow);
 	        unpacked_row = csvrow[0].split(',');
 	        watchlist.push(unpacked_row);
 	    })
        .on('end',function() {
-	    	console.log('finished parsing stock list.');
 	    	var bitcoin = ['BTC', 'Bitcoin'];
 	    	var omisego = ['OMG', 'Omisego'];
 	    	watchlist.push(bitcoin);
@@ -112,7 +110,7 @@ function write_to_firebase(tweet) {
 	delete tweet.id;
 
 	if (typeof(tweet.url) == 'undefined') {tweet.url = ''}
-	ref.child(id).set({ 
+	ref.child('poll').child(id).set({ 
 		text: tweet.text,
 		timestamp: tweet.created_at,
 		source: tweet.source,
@@ -133,7 +131,7 @@ function save(tweet, csv_path) {
 	 *
 	 */
 	if (!fs.existsSync(csv_path)) {
-		var header = 'id,text,timestamp,source,symbols,company_names,url\n'
+		var header = 'id,text,timestamp,source,symbols,company_names,url,verified\n'
 		fs.writeFile(csv_path, header, function(err) {
 		    if(err) {
 		        return console.log(err);
@@ -147,6 +145,7 @@ function save(tweet, csv_path) {
 		words[i] = words[i].replace(/^\s+|\s+$/g, '');
 	}
 	var text = words.join(' ');
+	tweet.text = text;
 	var line = tweet.id + ',' + text + ',' + tweet.created_at + ',' + tweet.source + ',' + tweet.symbols + ',' + tweet.company_names + ','+ tweet.url + '\n';
 	
 	fs.appendFile(csv_path, line, function (err) {
@@ -160,6 +159,10 @@ function save(tweet, csv_path) {
 }
 
 function uniqueify(a) {
+	/*
+	 *	Taken from https://stackoverflow.com/questions/1960473/get-all-unique-values-in-an-array-remove-duplicates
+	 *
+	 */
     var seen = {};
     return a.filter(function(item) {
         return seen.hasOwnProperty(item) ? false : (seen[item] = true);
@@ -236,6 +239,8 @@ stockerBot.on('newTweet', function(screen_name, tweet) {
 		var names = companies.map(c => c[1]);
 		tweet.symbols = symbols.join('-');
 		tweet.company_names = names.join('*');
+		tweet.verified = tweet.user.verified;
+
 		save(tweet, DATA_WRITE_PATH);
 	}
 });
@@ -281,6 +286,3 @@ if (search) {
 if (poll) {
 	stockerBot.pollAccounts(influencers, WAIT_PERIOD);
 }
-
-
-
