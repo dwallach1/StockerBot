@@ -6,7 +6,8 @@
   "scripts": {
     "start": "npm run poll",
     "poll": "node main.js --poll --firebase",
-    "search": "node main.js --search"
+    "search": "node main.js --search",
+    "search_poll": "node main.js --search_poll --firebase"
   },
   "repository": {
     "type": "git",

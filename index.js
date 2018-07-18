@@ -62,14 +62,8 @@ const StockerBot = function(config) {
 			var screen_name
 			for (var i=0; i <screen_names.length; i++) {
 				screen_name = screen_names[i];
-				// process.stdout.write('polling worker for ')
-				// process.stdout.write(screen_name)
-				// process.stdout.write(' ......')
 				self.pollWorker(screen_name);
-				// process.stdout.write('done!\n')
 			}
-			// new line
-			// console.log()
 		}, interval);
 	};
 
@@ -90,7 +84,7 @@ const StockerBot = function(config) {
 
 		T.get(path, options, function(err, data, response) {
 			if (err) {
-				log('!!!!!!!!!! --> ', screen_name, err)
+				log(err)
 			}
 			else {
 				if (data.length) {
@@ -126,7 +120,7 @@ const StockerBot = function(config) {
 		var tweets;
 		T.get(path, options, function(err, data, response) {
 			if (err) {
-				log('\x1b[31m', symbol, '\x1b[0m', err);
+				log(err);
 			}
 			else {
 				tweets = data.statuses;

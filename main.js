@@ -15,9 +15,12 @@ var admin = require("firebase-admin");
  *
  */
 
-var symbol, count, search, poll;
+var symbol, count;
 var firebase = false;
 var verified = false;
+var search = false;
+var poll = false;
+var search_poll = false;
 process.argv.forEach(function (val, index, array) {
   // console.log(index + ': ' + val);
   if (val == '--symbol' || val == '-s') { symbol = process.argv[index+1]; }
@@ -26,6 +29,7 @@ process.argv.forEach(function (val, index, array) {
   if (val == '--verified') { verified = true; }
   if (val == '--search') { search = true; }
   if (val == '--poll') { poll = true; }
+  if (val == '--search_poll') { search_poll = true; }
 });
 
 
@@ -57,6 +61,7 @@ process.argv.forEach(function (val, index, array) {
  *
  */
 const WAIT_PERIOD = 60*1000 ;	// 60 seconds 
+const ONE_DAY = 60*1000*60*24; 
 const BATCH_SIZE = 3;
 const DATA_READ_PATH = 'data/stocks_cleaned.csv';
 const DATA_WRITE_PATH = 'data/tweets.csv';
@@ -268,7 +273,8 @@ stockerBot.on('symbolTweets', function(symbol, tweets) {
 		tweet.source = tweet.user.screen_name;
 		tweet.symbols = symbol;
 		tweet.company_names = '';
-		save(tweet, 'data/search_tweets.csv');
+		tweet.verified = tweet.user.verified;
+		save(tweet, 'data/search_poll_tweets.csv', 'search');
 	}
 });
 
@@ -286,4 +292,14 @@ if (search) {
 
 if (poll) {
 	stockerBot.pollAccounts(influencers, WAIT_PERIOD);
+}
+
+if (search_poll) {
+	console.log('search_poll starting..');
+	get_user_watchlist();
+	setInterval(function() {
+		for (var i=0; i < watchlist.length; i++) {
+			stockerBot.searchSymbol(watchlist[i][0], 100);
+		} 
+	}, ONE_DAY);
 }
