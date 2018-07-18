@@ -8,6 +8,28 @@ var csv = require('csv');
 var admin = require("firebase-admin");
 
 
+
+/*
+ *
+ *	Parse command line arguments & set flags
+ *
+ */
+
+var argv = require('minimist')(process.argv);
+console.dir(argv);
+
+var symbol, count;
+
+
+process.argv.forEach(function (val, index, array) {
+  console.log(index + ': ' + val);
+  if (val == '--symbol' || val == '-s') { symbol = process.argv[index+1]; }
+  if (val == '--count' || val == '-c') { count = parseInt(process.argv[index+1]); }
+});
+
+
+
+
 /*
  *
  *	Initalize Firebase account 
@@ -45,6 +67,7 @@ const BATCH_SIZE = 3;
 const DATA_READ_PATH = 'data/stocks_cleaned.csv';
 const DATA_WRITE_PATH = 'data/tweets.csv';
 
+
 var stockerBot = new StockerBot(config);
 
 
@@ -64,7 +87,6 @@ get_user_watchlist()
  	 * 	curious about
  	 *
  	 */
- 	 // var watchlist = []
  	 var unpacked_row;
  	 fs.createReadStream(DATA_READ_PATH)
    	   .pipe(parse({delimiter: ':'}))
@@ -192,17 +214,19 @@ stockerBot.on('newTweet', function(screen_name, tweet) {
 	}
 });
 
+stockerBot.on('symbolTweets', function(symbol, tweets) {
+	console.log('Found ', tweets.length, ' tweets for ', symbol);
+	console.log(tweets);
+
+	process.exit();
+});
 
 
-stockerBot.on('symbolTweet', function(symbol, tweet) {
-
-	console.log('tweet about: ', symbol, '(', tweet.created_at, ')', ' ---> ', tweet.text)
-	tweet.source = symbol
-
-	save(tweet)
-}); 
-
-
+/*
+ *	
+ *	StockerBot Methods
+ *
+ */
 
 // start the loop
 var influencers = ['MarketWatch', 'business', 'YahooFinance', 'TechCrunch', 
@@ -210,6 +234,13 @@ var influencers = ['MarketWatch', 'business', 'YahooFinance', 'TechCrunch',
 					 'jimcramer', 'TheStreet', 'TheStalwart', 'TruthGundlach',
 					'Carl_C_Icahn', 'ReformedBroker', 'benbernanke', 'bespokeinvest', 'BespokeCrypto',
 					'stlouisfed', 'federalreserve', 'GoldmanSachs', 'ianbremmer', 'MorganStanley', 'AswathDamodaran',
-					'mcuban', 'muddywatersre'];
+					'mcuban', 'muddywatersre', 'StockTwits', 'SeanaNSmith'];
 
 stockerBot.pollAccounts(influencers, WAIT_PERIOD);
+
+
+// var symbol = '$TSLA';
+// var count = 5;
+stockerBot.searchSymbol(symbol, count);
+
+

@@ -48,11 +48,11 @@ const StockerBot = function(config) {
 	this.analyzeTweet = function analyzeTweet(screen_name, tweet) {
 
 		if (tweet.id > (this.lastTweet[screen_name] || 0)) {
-			self.lastTweet[screen_name] = tweet.id
+			self.lastTweet[screen_name] = tweet.id;
 
 			//emit the event that a new tweet was analyzed
-			tweet.screen_name = screen_name
-			self.emit('newTweet', screen_name, tweet)
+			tweet.screen_name = screen_name;
+			self.emit('newTweet', screen_name, tweet);
 
 		}
 	};
@@ -61,11 +61,11 @@ const StockerBot = function(config) {
 		setInterval(function() {
 			var screen_name
 			for (var i=0; i <screen_names.length; i++) {
-				screen_name = screen_names[i]
+				screen_name = screen_names[i];
 				// process.stdout.write('polling worker for ')
 				// process.stdout.write(screen_name)
 				// process.stdout.write(' ......')
-				self.pollWorker(screen_name)
+				self.pollWorker(screen_name);
 				// process.stdout.write('done!\n')
 			}
 			// new line
@@ -106,22 +106,35 @@ const StockerBot = function(config) {
 	};
 
 
-	this.searchSymbol = function searchSymbol(symbol) {
-		const path = 'search/tweets'
-		if (symbol[0] != '$') { symbol = '$' + symbol }
+	this.searchSymbol = function searchSymbol(symbol, count) {
+		/*
+		 *	if count is set to -1 and the since date parameter is 
+		 *	provided, this API will accumulate the tweets in batches ~ if very
+		 *	large, it can take a while 
+		 * 
+		 *	Keep in mind that the search index has a 7-day limit.
+		 *
+		 */
+		const path = 'search/tweets';
+		if (symbol.charAt(0) != '$') { symbol = '$' + symbol; }
+		symbol = symbol.trim();
+		console.log('searching for symbol: ', symbol);
 		const options = {
 			'q' : symbol,
-			'count' : 100
+			'count' : count
 		};
-
+		var tweets;
 		T.get(path, options, function(err, data, response) {
 			if (err) {
-				log('!!!!!!!!!! --> ', symbol, err)
+				log('\x1b[31m', symbol, '\x1b[0m', err);
 			}
 			else {
-				if (data.length) {
-					self.emit('symbolTweet', symbol, data[0])
-				}
+				// console.log('data is ', data);
+				
+				tweets = data.statuses;
+				console.log('got tweets!');
+				self.emit('symbolTweets', symbol, tweets);
+
 			}
 		});
 	}
@@ -131,15 +144,13 @@ const StockerBot = function(config) {
 StockerBot.prototype = new events.EventEmitter;
 
 StockerBot.prototype.pollAccounts = function(screen_names, interval) {
-	console.log('Polling accounts ...')
-	this.pollSpawner(screen_names, interval)
-	// console.log('Finished polling accounts!')
+	console.log('Polling accounts ...');
+	this.pollSpawner(screen_names, interval);
 };
 
-StockerBot.prototype.pollSymbol = function(symbol, interval) {
-	console.log('Polling symbol ', symbol, '...')
-	//this.
-	console.log('Finished polling ', symbol, '!')
+StockerBot.prototype.searchSymbol = function(symbol, count) {
+	console.log('Searching Twitter for symbol ', symbol, '...');
+	this.searchSymbol(symbol, count);
 };
 
 // make available to import from other modules

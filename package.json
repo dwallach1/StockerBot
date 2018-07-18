@@ -23,6 +23,7 @@
     "csv-parse": "^2.5.0",
     "events": "^3.0.0",
     "firebase-admin": "^5.13.0",
+    "minimist": "^1.2.0",
     "papaparse": "^4.5.0",
     "twit": "^2.2.11",
     "unirest": "^0.5.1"
