@@ -116,7 +116,8 @@ function write_to_firebase(tweet, child) {
 		source: tweet.source,
 		symbols: tweet.symbols,
 		company_names: tweet.company_names,
-		url: tweet.url
+		url: tweet.url,
+		verified: tweet.verified
 	});
 
 	console.log('updated Firebase w new tweet \x1b[42m successfully! \x1b[0m')
