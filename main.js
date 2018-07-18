@@ -130,9 +130,9 @@ function find_companies(screen_name, text) {
 	var symbol, name, $symbol, $S, S, N, words
 	if (watchlist) {
 		for (var i=0; i < watchlist.length; i++) {
-			symbol = ' ' + watchlist[i][0] + ' '
-			$symbol = '$' + watchlist[i][0]
-			name = watchlist[i][1]
+			symbol = ' ' + watchlist[i][0] + ' ';
+			$symbol = ' ' + '$' + watchlist[i][0] + ' ';
+			name = watchlist[i][1];
 
 			$S = text.toLowerCase().includes($symbol.toLowerCase());
 			N = text.toLowerCase().includes(name.toLowerCase());
