@@ -99,7 +99,7 @@ function get_user_watchlist() {
     	});
 }
 
-function write_to_firebase(tweet) {
+function write_to_firebase(tweet, child) {
 	/*
 	 *
 	 *	Writes the tweet to the user's firebase realtime DB at the root
@@ -110,7 +110,7 @@ function write_to_firebase(tweet) {
 	delete tweet.id;
 
 	if (typeof(tweet.url) == 'undefined') {tweet.url = ''}
-	ref.child('poll').child(id).set({ 
+	ref.child(child).child(id).set({ 
 		text: tweet.text,
 		timestamp: tweet.created_at,
 		source: tweet.source,
@@ -122,7 +122,7 @@ function write_to_firebase(tweet) {
 	console.log('updated Firebase w new tweet \x1b[42m successfully! \x1b[0m')
 }
 
-function save(tweet, csv_path) {
+function save(tweet, csv_path, child) {
 	/*
 	 *	
 	 *	This function saves the tweet to a file called tweets.csv which is 
@@ -146,7 +146,7 @@ function save(tweet, csv_path) {
 	}
 	var text = words.join(' ');
 	tweet.text = text;
-	var line = tweet.id + ',' + text + ',' + tweet.created_at + ',' + tweet.source + ',' + tweet.symbols + ',' + tweet.company_names + ','+ tweet.url + '\n';
+	var line = tweet.id + ',' + text + ',' + tweet.created_at + ',' + tweet.source + ',' + tweet.symbols + ',' + tweet.company_names + ','+ tweet.url + tweet.verified +'\n';
 	
 	fs.appendFile(csv_path, line, function (err) {
 	  
@@ -154,7 +154,7 @@ function save(tweet, csv_path) {
 
 	  console.log('Tweet ', tweet.id, ' was saved \x1b[42m successfully! \x1b[0m');
 	  
-	  if (firebase) { write_to_firebase(tweet); }
+	  if (firebase) { write_to_firebase(tweet, child); }
 	});
 }
 
@@ -241,7 +241,7 @@ stockerBot.on('newTweet', function(screen_name, tweet) {
 		tweet.company_names = names.join('*');
 		tweet.verified = tweet.user.verified;
 
-		save(tweet, DATA_WRITE_PATH);
+		save(tweet, DATA_WRITE_PATH, 'poll');
 	}
 });
 
