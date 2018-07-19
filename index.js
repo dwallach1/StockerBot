@@ -3,10 +3,6 @@ const unirest = require('unirest');
 const Twit = require('twit');
 const events = require('events');
 
-
-// inspired from @KeithCollins botomoter twitbot
-// https://github.com/keithcollins/node-botometer
-
 const StockerBot = function(config) {
 
 	var T = new Twit({
@@ -20,23 +16,22 @@ const StockerBot = function(config) {
 	});
 
 	// make self reference the StockerBot instance 
-	var self = this
+	var self = this;
 
-	const call_delay = config.call_delay || 0
-	const logger = config.logger || true
-	const logger_path = config.logger_path
+	const call_delay = config.call_delay || 0;
+	const logger = config.logger || true;
+	const logger_path = config.logger_path;
 
-	var eventEmitter = new events.EventEmitter()
-	this.newTweet = eventEmitter
-	this.lastTweet = {}
+	var eventEmitter = new events.EventEmitter();
+	this.newTweet = eventEmitter;
+	this.lastTweet = {};
 
 
 	const log = function(msg) {
 		if (logger) {
 			if (logger_path) {
 				fs.writefile(logger_path, msg, function(err) {
-					if (err) console.log(err)
-					// otherwise do nothing
+					if (err) console.log(err);
 					});
 			} else{
 				console.log(msg);
@@ -77,22 +72,22 @@ const StockerBot = function(config) {
 		};
 
 		if (self.lastTweet[screen_name]) {
-			options.since_id = self.lastTweet[screen_name]
+			options.since_id = self.lastTweet[screen_name];
 		}
 
 
 
 		T.get(path, options, function(err, data, response) {
 			if (err) {
-				log(err)
+				log(err);
 			}
 			else {
 				if (data.length) {
 					// analyze and store the tweet
-					self.analyzeTweet(screen_name, data[0])
+					self.analyzeTweet(screen_name, data[0]);
 
 					//update last tweet
-					self.lastTweet[screen_name] = data[0].id
+					self.lastTweet[screen_name] = data[0].id;
 
 				}
 			}
