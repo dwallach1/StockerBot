@@ -138,7 +138,7 @@ function save(tweet, csv_path, child) {
 	 *	not exist, then this function will create it at the designated path.
 	 *
 	 */
-	if (csvExport)
+	if (csvExport) {
 		if (!fs.existsSync(csv_path)) {
 			var header = 'id,text,timestamp,source,symbols,company_names,url,verified\n'
 			fs.writeFile(csv_path, header, function(err) {
