@@ -21,6 +21,7 @@ var verified = false;
 var search = false;
 var poll = false;
 var search_poll = false;
+var csvExport = false;
 process.argv.forEach(function (val, index, array) {
   // console.log(index + ': ' + val);
   if (val == '--symbol' || val == '-s') { symbol = process.argv[index+1]; }
@@ -30,6 +31,7 @@ process.argv.forEach(function (val, index, array) {
   if (val == '--search') { search = true; }
   if (val == '--poll') { poll = true; }
   if (val == '--search_poll') { search_poll = true; }
+  if (val == '--csv') { csvExport = true; }
 });
 
 
@@ -136,14 +138,16 @@ function save(tweet, csv_path, child) {
 	 *	not exist, then this function will create it at the designated path.
 	 *
 	 */
-	if (!fs.existsSync(csv_path)) {
-		var header = 'id,text,timestamp,source,symbols,company_names,url,verified\n'
-		fs.writeFile(csv_path, header, function(err) {
-		    if(err) {
-		        return console.log(err);
-		    }
-		    console.log(csv_path, " file was created!");
-		}); 
+	if (csvExport)
+		if (!fs.existsSync(csv_path)) {
+			var header = 'id,text,timestamp,source,symbols,company_names,url,verified\n'
+			fs.writeFile(csv_path, header, function(err) {
+			    if(err) {
+			        return console.log(err);
+			    }
+			    console.log(csv_path, " file was created!");
+			}); 
+		}
 	}
 
 	var words = tweet.text.replace(/,/g , '').split(' ');
@@ -151,17 +155,21 @@ function save(tweet, csv_path, child) {
 		words[i] = words[i].replace(/^\s+|\s+$/g, '');
 	}
 	var text = words.join(' ');
+	text = text.replace(/\r?\n|\r/g, ' ');
 	tweet.text = text;
-	var line = tweet.id + ',' + text + ',' + tweet.created_at + ',' + tweet.source + ',' + tweet.symbols + ',' + tweet.company_names + ','+ tweet.url + tweet.verified +'\n';
 	
-	fs.appendFile(csv_path, line, function (err) {
-	  
-	  if (err) { console.log('error saving data (append)', err); }
+	if (csvExport) {
+		var line = tweet.id + ',' + text + ',' + tweet.created_at + ',' + tweet.source + ',' + tweet.symbols + ',' + tweet.company_names + ','+ tweet.url + tweet.verified +'\n';
+		
+		fs.appendFile(csv_path, line, function (err) {
+		  
+		  if (err) { console.log('error saving data (append)', err); }
 
-	  console.log('Tweet ', tweet.id, ' was saved \x1b[42m successfully! \x1b[0m');
-	  
-	  if (firebase) { write_to_firebase(tweet, child); }
-	});
+		  console.log('Tweet ', tweet.id, ' was saved \x1b[42m successfully! \x1b[0m');
+		  
+		});
+	}
+	if (firebase) { write_to_firebase(tweet, child); }
 }
 
 function uniqueify(a) {
