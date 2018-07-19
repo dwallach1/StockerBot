@@ -1,8 +1,12 @@
 import json
 import csv
+from emoji import UNICODE_EMOJI
+
+def is_emoji(s):
+    return s in UNICODE_EMOJI
 
 
-
+# print (is_emoji(🔥))
 infile = '../data/stockerbot-export.json'
 outfile = '../data/stockerbot-export.csv'
 
@@ -13,32 +17,40 @@ with open(infile) as f:
 poll_data = data['poll']
 search_data = data['search']
 
+# create hashmap for finding company names of data in search data
 stocks = {}
+stocks['OMG'] = 'Omisego'
+stocks['BTC'] = 'Bitcoin'
+stocks['ETH'] = 'Etherium'
+with open('../data/stocks.csv') as csv_file:
+	csv_reader = csv.reader(csv_file, delimiter=',')
+	i = 0
+	for row in csv_reader:
+		if i == 0:
+			i += 1
+		else:
+			stocks[row[0]] = row[1].split(',')[0]
 
-header = 'id,text,timestamp,source,symbols,company_names,url\n'
+
+header = 'id,text,timestamp,source,symbols,company_names,url,verified\n'
 lines = [header]
 for d in poll_data:
 	key = d
 	d = poll_data[d]
-	line = key + ',' + d['text'] + ',' + d['timestamp'] + ',' + d['source'] + ',' + d['symbols'] + ',' + d['company_names'] + ','+ d['url'] + ',' + str(d['verified']) + '\n';
+	text = d['text'].replace('\n', ' ').replace('\r', '')
+	line = key + ',' + text + ',' + d['timestamp'] + ',' + d['source'] + ',' + d['symbols'] + ',' + d['company_names'] + ','+ d['url'] + ',' + str(d['verified']) + '\n';
 	lines.append(line)
-
-	symbols = d['symbols'].split('-')
-	names = d['company_names'].split('*')
-
-	i = 0
-	for symbol in symbols:
-		if not (symbol in stocks.keys()):
-			stocks[symbol] = names[i]
-		i += 1
 
 
 for d in search_data:
 	key = d
 	d = search_data[d]
+	if d['symbols'][0] == '$': d['symbols'] = d['symbols'][1:]
 	if d['symbols'] in stocks.keys():
-		d[company_names] = stocks[d[symbols]]
-	line = key + ',' + d['text'] + ',' + d['timestamp'] + ',' + d['source'] + ',' + d['symbols'] + ',' + d['company_names'] + ','+ d['url'] + ',' + str(d['verified']) + '\n';
+		d['company_names'] = stocks[d['symbols']]
+	text = d['text'].replace('\n', ' ').replace('\r', ' ')
+
+	line = key + ',' + text + ',' + d['timestamp'] + ',' + d['source'] + ',' + d['symbols'] + ',' + d['company_names'] + ','+ d['url'] + ',' + str(d['verified']) + '\n';
 	lines.append(line)
 
 with open(outfile, 'w') as f:
