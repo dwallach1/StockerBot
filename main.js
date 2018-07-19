@@ -62,7 +62,7 @@ process.argv.forEach(function (val, index, array) {
  *
  *
  */
-const WAIT_PERIOD = 60*1000 ;	// 60 seconds 
+const WAIT_PERIOD = 60*1000*3;	// 60 seconds 
 const ONE_DAY = 60*1000*60*24; 
 const BATCH_SIZE = 3;
 const DATA_READ_PATH = 'data/stocks_cleaned.csv';
