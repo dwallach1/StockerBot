@@ -42,7 +42,6 @@ process.argv.forEach(function (val, index, array) {
  */
  var serviceAccount, db, ref;
  if (firebase) {
-
  	console.log('Firebase enabled...Attempting to verify credentials.')
  	serviceAccount = require("./stockerbot-firebase-adminsdk-1yhwz-6e9672bd0a.json");
  	admin.initializeApp({
@@ -62,16 +61,19 @@ process.argv.forEach(function (val, index, array) {
  *
  *
  */
-const WAIT_PERIOD = 60*1000*3;	// 60 seconds 
-const ONE_DAY = 60*1000*60*24; 
-const BATCH_SIZE = 3;
-const DATA_READ_PATH = 'data/stocks_cleaned.csv';
-const DATA_WRITE_PATH = 'data/tweets.csv';
+const ONE_MINUTE = 60*1000;
+const ONE_HOUR = ONE_MINUTE*60;
+const ONE_DAY = ONE_HOUR*24; 
+
+const WAIT_PERIOD = ONE_MINUTE*3;
+const MAX_COUNT = 100;
+const WATCHLIST_PATH = 'data/stocks.json';
+const CSV_PATH = 'data/tweets.csv';
 
 var stockerBot = new StockerBot(config);
 
 var watchlist = []
-if (poll) { get_user_watchlist(); }
+if (poll || search_poll) { get_user_watchlist(); }
 
 var influencers = ['MarketWatch', 'business', 'YahooFinance', 'TechCrunch', 
 					'WSJ', 'Forbes', 'FT', 'TheEconomist', 'nytimes', 'Reuters', 'GerberKawasaki', 
@@ -89,21 +91,15 @@ function get_user_watchlist() {
  	 * 	curious about
  	 *
  	 */
- 	 var unpacked_row;
- 	 fs.createReadStream(DATA_READ_PATH)
-   	   .pipe(parse({delimiter: ':'}))
-       .on('data', function(csvrow) {
-	        unpacked_row = csvrow[0].split(',');
-	        watchlist.push(unpacked_row);
-	    })
-       .on('end',function() {
-	    	var bitcoin = ['BTC', 'Bitcoin'];
-	    	var omisego = ['OMG', 'Omisego'];
-	    	watchlist.push(bitcoin);
-	    	watchlist.push(omisego);
-	    	console.log("Number of Companies on watchlist: ", watchlist.length);	    	
-	    	return watchlist
-    	});
+ 	 var obj = JSON.parse(fs.readFileSync(WATCHLIST_PATH, 'utf8'));
+ 	 var symbol, name;
+ 	 for (var key in obj) {
+ 	 	symbol = key;
+ 	 	name = obj[key];
+ 	 	watchlist.push([symbol, name]);
+
+ 	 }
+ 	 console.log("Number of Companies on watchlist: ", watchlist.length);
 }
 
 function write_to_firebase(tweet, child) {
@@ -130,7 +126,7 @@ function write_to_firebase(tweet, child) {
 	console.log('updated Firebase w new tweet \x1b[42m successfully! \x1b[0m')
 }
 
-function save(tweet, csv_path, child) {
+function save(tweet, child) {
 	/*
 	 *	
 	 *	This function saves the tweet to a file called tweets.csv which is 
@@ -139,13 +135,13 @@ function save(tweet, csv_path, child) {
 	 *
 	 */
 	if (csvExport) {
-		if (!fs.existsSync(csv_path)) {
+		if (!fs.existsSync(CSV_PATH)) {
 			var header = 'id,text,timestamp,source,symbols,company_names,url,verified\n'
-			fs.writeFile(csv_path, header, function(err) {
+			fs.writeFile(CSV_PATH, header, function(err) {
 			    if(err) {
 			        return console.log(err);
 			    }
-			    console.log(csv_path, " file was created!");
+			    console.log(CSV_PATH, " file was created!");
 			}); 
 		}
 	}
@@ -161,12 +157,9 @@ function save(tweet, csv_path, child) {
 	if (csvExport) {
 		var line = tweet.id + ',' + text + ',' + tweet.created_at + ',' + tweet.source + ',' + tweet.symbols + ',' + tweet.company_names + ','+ tweet.url + tweet.verified +'\n';
 		
-		fs.appendFile(csv_path, line, function (err) {
-		  
+		fs.appendFile(CSV_PATH, line, function (err) {
 		  if (err) { console.log('error saving data (append)', err); }
-
 		  console.log('Tweet ', tweet.id, ' was saved \x1b[42m successfully! \x1b[0m');
-		  
 		});
 	}
 	if (firebase) { write_to_firebase(tweet, child); }
@@ -206,22 +199,8 @@ function find_companies(screen_name, text) {
 			if ($S || S || N) { companies.push(watchlist[i]); }
 		}
 	}
-	// console.log('watchlist is: ', watchlist);
 	return uniqueify(companies);
 }
-
-function classify(screen_name, text) {
-	/*
-	 *
-	 *  Aims to classify the tweet into one of the following categories:
-	 *	
-	 *  	0 - competitor
-	 *		1 - the company itself
-	 *		2 - general industry of the company
-	 */
-	 return 1;
-}
-
 
 /*
  *	Attach event emitters
@@ -230,7 +209,7 @@ function classify(screen_name, text) {
 
 stockerBot.on('newTweet', function(screen_name, tweet) {
 	/*
-	 * TWITTER TWEET API PARAMETERS (https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/intro-to-tweet-json)
+	 * Twitter's Tweet API (https://developer.twitter.com/en/docs/tweets/data-dictionary/overview/intro-to-tweet-json)
 	 * 
 	 */
 
@@ -255,7 +234,7 @@ stockerBot.on('newTweet', function(screen_name, tweet) {
 		tweet.company_names = names.join('*');
 		tweet.verified = tweet.user.verified;
 
-		save(tweet, DATA_WRITE_PATH, 'poll');
+		save(tweet, 'poll');
 	}
 });
 
@@ -282,7 +261,7 @@ stockerBot.on('symbolTweets', function(symbol, tweets) {
 		tweet.symbols = symbol;
 		tweet.company_names = '';
 		tweet.verified = tweet.user.verified;
-		save(tweet, 'data/search_poll_tweets.csv', 'search');
+		save(tweet, 'search');
 	}
 });
 
@@ -304,10 +283,17 @@ if (poll) {
 
 if (search_poll) {
 	console.log('search_poll starting..');
-	get_user_watchlist();
+	
+	/*
+	 *	Run once immediately, then start the interval to run every day
+	 *	after
+	 */
+	for (var i=0; i < watchlist.length; i++) {
+			stockerBot.searchSymbol(watchlist[i][0], MAX_COUNT);
+	} 
 	setInterval(function() {
 		for (var i=0; i < watchlist.length; i++) {
-			stockerBot.searchSymbol(watchlist[i][0], 100);
+			stockerBot.searchSymbol(watchlist[i][0], MAX_COUNT);
 		} 
 	}, ONE_DAY);
 }
