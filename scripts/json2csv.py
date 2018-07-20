@@ -1,4 +1,5 @@
 import json
+import os
 import csv
 from emoji import UNICODE_EMOJI
 
@@ -7,8 +8,13 @@ def is_emoji(s):
 
 
 # print (is_emoji(🔥))
-infile = '../data/stockerbot-export.json'
-outfile = '../data/stockerbot-export.csv'
+dir_path, file_path = os.path.split(os.path.abspath(__file__))
+infile = '/'.join(dir_path.split('/')[:-1]) + '/data/stockerbot-export.json'
+outfile = '/'.join(dir_path.split('/')[:-1]) + '/data/stockerbot-export.csv'
+
+stocks_path = '/'.join(dir_path.split('/')[:-1]) + '/data/stocks.csv'
+# infile = '../data/stockerbot-export.json'
+# outfile = '../data/stockerbot-export.csv'
 
 
 with open(infile) as f:
@@ -22,7 +28,7 @@ stocks = {}
 stocks['OMG'] = 'Omisego'
 stocks['BTC'] = 'Bitcoin'
 stocks['ETH'] = 'Etherium'
-with open('../data/stocks.csv') as csv_file:
+with open(stocks_path) as csv_file:
 	csv_reader = csv.reader(csv_file, delimiter=',')
 	i = 0
 	for row in csv_reader:
