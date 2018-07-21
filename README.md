@@ -47,7 +47,53 @@ If you want to ensure that all the tweets are from verified accounts then run
 > npm run search_poll -- --verified
 ```
 
+### Sentiment Classification
 
-### Converting JSON to CSV
+One main objective of this project is to classify the sentiment of companies based on verified user's tweets as well as articles published by reputable sources. Using current (free) text based sentiment analysis packages such as nltk, textblob, and others, I was unable to achieve decent sentiment analysis with regards to investing. For example, a tweet would say `Amazon is a buy, you must invest now` and these libraries would classify it as negative or neutral sentiment. This is due to the training sets these classifiers were built on. For this reason, I decided to write a script (`scripts/classify.py`) that takes in the json representation of the database downloaded from the Firebase console (using export to JSON option) and lets you manually classify each sentence. It works like this:
+
+1. For each tweet parsed and written to the Database, it gets the tweet's text
+2. If a url is attached to the tweet, it opens the url and uses the [Stocker](https://github.com/dwallach1/Stocker) API (webparser.py module) to open the url and extract the text. It then appends the text to the tweet's text.
+3. Then converts this text into a textblob object (so that it can be split into sentences)
+4. For each sentence, it asks you to mark the sentiment as either `p` for positive, `n` for negative or `x` for neutral. If the sentence is garbage or arbitrary, then write `g` and the program will ignore it. 
+	* sometimes the webscraper encounters a lot of junk, to skip to the next object in the database, write `skip`
+5. To save your work, type in `save` at any time or type in `exit` to save your work and cease execution
+
+When you save your classifications, it writes them to a `vocabulary.json`. If the file already exists, it will update it with the new data every time you save. Every time you save, it will also update the database json file, marking each object that has been classified with an `analyzed` attribute indicating that it has already been seen and handled -- this avoids reclassifying the same data every time. 
+
+An example of this process is provided below:
+
+```
+> python classifiy.py
+> He s considering a switch to eBay Inc (EBAY.O), adding that prices for wall mounts were 40 percent higher on Amazon s Australia site if they appeared there at all.
+> EBAY (eBay) > p
+> AMZN (Amazon) > n
+> It is highly likely they will get it right in Australia over the longer term, and prices will be competitive, service will be outstanding, and they will eat eBay s lunch,  Michael Pachter, managing director of equity research at Los Angeles-based Wedbush Securities, said by email.
+> EBAY (eBay) > exit
+saved!
+```
+This would yield a `vocabulary.json` that looked like
+```
+{
+	"He s considering a switch to eBay Inc (EBAY.O), adding that prices for wall mounts were 40 percent higher on Amazon s Australia site if they appeared there at all.": { 
+				"EBAY": "p", 
+				"AMZN": "n"
+			}
+}
+```
+and then in the input json file it will mark that node as such:
+```
+"1019836822401224700": {
+            "company_names": "eBay*Amazon",
+            "source": "Reuters",
+            "symbols": "EBAY-AMZN",
+            "text": "Amazon hands goodwill to eBay with move to shut Australians out of overseas sites https://t.co/4g3qAWHO8d https://t.co/I0SXYd4BJu",
+            "timestamp": "Thu Jul 19 06:50:20 +0000 2018",
+            "url": "https://reut.rs/2NuAeRt",
+            "verified": true,
+            "analyzed": true
+        }
+```
+
+### Converting between JSON and CSV
 
 Once you have created your Firebase Realtime Database and began running this script with your configurations and your tweets have been accumulating. Log into your Firebase Database dashboard and under the data tab click the 3 vertical dots and select download `Export JSON`. In the scripts folder inside of the file `json2csv.py` update the `infile` variable to point to the file downloaded from Firebase and the `outfile` to point to where you want to write the .csv file. From there, you can use the datasets how you wish. 
