@@ -1,6 +1,6 @@
 # StockerBot
 
-Some use cases for this API can be found on my Kaggle page: [here](https://www.kaggle.com/davidwallach/financial-tweets)
+Some use cases for this API can be found on my Kaggle page: [here](https://www.kaggle.com/davidwallach/financial-tweets). The overarching mission of this project, is to develop a dataset consisting of sentences with financial sentiment, then tag each sentece and finally use this to build a sentiment analysis model fine-tuned for investing jargon. From there, I would hope to build an API that tracks live sentiment for any publicly traded company. The motivation is that there currently are no free financial models that can accurately classify sentiment with regards to investing. To see a live API using sentiment analysis and see the problems with finanical sentiment, play around with [this](http://text-processing.com/demo/sentiment/).
 
 This API uses the [Twit API](https://github.com/ttezel/twit) to monitor and search Twitter for tweets about publicly traded securities that you are interested in. To set up the project on your local machine, just run the following code
 
@@ -49,7 +49,7 @@ If you want to ensure that all the tweets are from verified accounts then run
 
 ### Sentiment Classification
 
-One main objective of this project is to classify the sentiment of companies based on verified user's tweets as well as articles published by reputable sources. Using current (free) text based sentiment analysis packages such as nltk, textblob, and others, I was unable to achieve decent sentiment analysis with regards to investing. For example, a tweet would say `Amazon is a buy, you must invest now` and these libraries would classify it as negative or neutral sentiment. This is due to the training sets these classifiers were built on. For this reason, I decided to write a script (`scripts/classify.py`) that takes in the json representation of the database downloaded from the Firebase console (using export to JSON option) and lets you manually classify each sentence. It works like this:
+One main objective of this project is to classify the sentiment of companies based on verified user's tweets as well as articles published by reputable sources. Using current (free) text based sentiment analysis packages such as nltk, textblob, and others, I was unable to achieve decent sentiment analysis with regards to investing. For example, a tweet would say `Amazon is a buy, you must invest now` and these [libraries](http://text-processing.com/demo/sentiment/) would classify it as negative or neutral sentiment. This is due to the training sets these classifiers were built on. For this reason, I decided to write a script (`scripts/classify.py`) that takes in the json representation of the database downloaded from the Firebase console (using export to JSON option) and lets you manually classify each sentence. It works like this:
 
 1. For each tweet parsed and written to the Database, it gets the tweet's text
 2. If a url is attached to the tweet, it opens the url and uses the [Stocker](https://github.com/dwallach1/Stocker) API (webparser.py module) to open the url and extract the text. It then appends the text to the tweet's text.
@@ -64,6 +64,12 @@ An example of this process is provided below:
 
 ```
 > python classifiy.py
+> Amazon hands goodwill to eBay with move to shut Australians out of overseas sites https://t.co/4g3qAWHO8d https://t.co/I0SXYd4BJu
+> EBAY (eBay) > p 	 
+> AMZN (Amazon) > n  
+
+# now the script opens the link and begins inlining the text from the link
+
 > He s considering a switch to eBay Inc (EBAY.O), adding that prices for wall mounts were 40 percent higher on Amazon s Australia site if they appeared there at all.
 > EBAY (eBay) > p
 > AMZN (Amazon) > n
