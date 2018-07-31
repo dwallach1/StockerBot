@@ -10,21 +10,15 @@ import sys
 import os
 import re
 import json
+import copy
 sys.path.insert(0, '/Users/david/Desktop/Projects/Stocker/src')
 from webparser import scrape
-
 from nltk.tokenize import sent_tokenize, word_tokenize
-from nltk.corpus import stopwords
-from nltk import RegexpParser
 
 
-# stop_words = set(stopwords.words('english'))
-# chunkGram = r'Chunk: {<RB.?>*<VB.?>*<NNP>+<NN>?}'
-# chunkParser = RegexpParser(chunkGram)
-
-
-# read in JSON files here 
+# declare read & write paths for data files  
 dir_path, file_path = os.path.split(os.path.abspath(__file__))
+
 data_path = '/'.join(dir_path.split('/')[:-1]) + '/data/stockerbot-export-test.json'
 vocab_path ='/'.join(dir_path.split('/')[:-1]) + '/data/vocabulary.json'
 stocks_path = '/'.join(dir_path.split('/')[:-1]) + '/data/stocks.json'
@@ -70,11 +64,11 @@ def exit():
 	save()
 	sys.exit()
 
-def main();
+def main():
 	# iterate over json objects in the polling subsection
 	for key in db.keys():
 		text = db[key]['text']
-		valid_responses = ['exit', 'save', 'skip', 'g', 'n', 'p', 'x']
+		valid_responses = ['exit', 'save', 'skip', 'split', 'g', 'n', 'p', 'x']
 		
 		if not ('analyzed' in db[key].keys()):
 			print('beginning to analyze new object (', key, ')')
@@ -84,9 +78,16 @@ def main();
 			sentences = sent_tokenize(text)
 			db[key]['analyzed'] = True
 
+
 			skip = False
+			split = False
+			stack = sent_tokenize(text)
+
+
+
 			# add tagged sentence to the vocabulary
-			for sentence in text:
+			while len(stack):
+				sentence = stack[0]
 				print (sentence)
 				tmp = []
 				for stock in db[key]['symbols'].split('-'):
@@ -96,17 +97,40 @@ def main();
 							print ('invalid entry, try again.')
 							continue
 						if tag == 'exit': exit()
-						elif tag == 'save': 
-							save()
+						elif tag == 'save': save()
 						elif tag == 'g': 
+							stack = stack[1:]
+							if len(stack) == 1: stack = []
 							break
 						elif tag == 'skip':
 							skip = True
 							break
+						elif tag == 'split':
+							split_str = ''
+							words = word_tokenize(sentence)
+							for i, val in enumerate(words): split_str += str(i) + ' : ' + val + '\n'
+							idx = int(input('select index for splitting\n' + split_str + '\n\ninput index --> '))
+							
+							# index bounds checking
+							if idx < 1 or idx > len(words) - 1:
+								print ('invalid index --> restarting sentence parsing')
+								continue
+
+							s = [' '.join(words[:idx]), ' '.join(words[idx:])] + stack[1:]
+							stack = s 
+							split = True
+							break
+
 						else: 
 							tmp.append([stock, tag])
+							stack = stack[1:]
+							if len(stack) == 1: stack = []
 							break
 					if skip:
+						break
+					
+					if split:
+						split = False
 						break
 
 				obj = {}
