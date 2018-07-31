@@ -123,7 +123,7 @@ function write_to_firebase(tweet, child) {
 		verified: tweet.verified
 	});
 
-	console.log('updated Firebase w new tweet \x1b[42m successfully! \x1b[0m')
+	console.log('updated Firebase w new tweet ', '(', id ,') ', '\x1b[42m successfully!\x1b[0m');
 }
 
 function save(tweet, child) {
