@@ -20,6 +20,14 @@ var watchlist = [['UAA', 'Under Armour'], ['TSLA', 'Tesla'], ['AAPL', 'Apple']];
 var influencers = ['MarketWatch', 'business', 'YahooFinance', 'TechCrunch'];
 ```
 
+Create a config file at project root with the following keys:
+- CONSUMER_KEY
+- CONSUMER_SECRET
+- ACCESS_TOKEN
+- ACCESS_TOKEN_SECRET
+- APP_ONLY_AUTH
+- TIMEOUT_MS
+
 Then in your terminal console, run 
 
 ```
