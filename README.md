@@ -20,7 +20,7 @@ var watchlist = [['UAA', 'Under Armour'], ['TSLA', 'Tesla'], ['AAPL', 'Apple']];
 var influencers = ['MarketWatch', 'business', 'YahooFinance', 'TechCrunch'];
 ```
 
-Create a config file at project root with the following keys:
+Create a new file called `config.json` file at project root with the following keys:
 - CONSUMER_KEY
 - CONSUMER_SECRET
 - ACCESS_TOKEN
@@ -28,10 +28,32 @@ Create a config file at project root with the following keys:
 - APP_ONLY_AUTH
 - TIMEOUT_MS
 
-Then in your terminal console, run 
+this will look like:
+
+```json
+{ 
+    "CONSUMER_KEY": "get from twitter dev associated app", 
+    "CONSUMER_SECRET": "get from twitter dev associated app",
+    "ACCESS_TOKEN": "get from twitter dev associated app",
+    "ACCESS_TOKEN_SECRET": "get from twitter dev associated app",
+    "APP_ONLY_AUTH": true,
+    "TIMEOUT_MS": 5000
+}
+```
+
+More information about this can be found [in Twitter's Docs.](https://developer.twitter.com/en/docs/basics/authentication/oauth-1-0a)
+
+
+If you want to run this connected to a Firebase account, you could now run:
 
 ```
-> npm run poll 
+> npm run poll  
+```
+
+The equivalent to run this and have it save the contents locally would be to run:
+```
+> make init
+> npm run poll:local
 ```
 
 This will run Twitter searches for all tweets made by the twitter accounts in the influencer array. If any of them contain tweets about any company in the watchlist, StockerBot will save the tweet to a .csv file indicated by the csv_path parameter and to your Firebase Realtime Database instance at the root with each tweet's ID used as the keys. By default the code will run every minute and not stop until you manually stop execution or your server stops. To configure the frequency StockerBot polls twitter, change the `WAIT_PERIOD` variable. 
