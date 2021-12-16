@@ -71,7 +71,7 @@ When you save your classifications, it writes them to a `vocabulary.json`. If th
 An example of this process is provided below:
 
 ```
-> python classifiy.py
+> python classify.py
 > Amazon hands goodwill to eBay with move to shut Australians out of overseas sites https://t.co/4g3qAWHO8d https://t.co/I0SXYd4BJu
 > EBAY (eBay) > p 	 
 > AMZN (Amazon) > n  
